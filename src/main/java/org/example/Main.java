@@ -10,7 +10,7 @@ public class Main {
     private static final String contactPoints = "max-dev";
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         try (Cluster cluster = connect(contactPoints)) {
             Session session = cluster.connect();
             session.execute("DROP KEYSPACE IF EXISTS lwt_test");
@@ -20,21 +20,26 @@ public class Main {
 
             session = cluster.connect("lwt_test");
 
-            UUID key = UUIDs.timeBased();
-            String dummy = "ABC";
-            String value = "DEF";
+            final UUID key = UUIDs.timeBased();
+            final String dummy = "ABC";
+            final String value = "DEF";
             session.execute("insert into lwt(key, dummy, value) values(?, ?, ?)", key, dummy, value);
 
-            String value2 = "XYZ";
-            ResultSet rs = session.execute("update lwt set value=? where key=?", value2, key);
+            final String value2 = "XYZ";
+            session.execute("update lwt set value=? where key=?", value2, key);
+            String actualValue = session.execute("select value from lwt where key=?", key).one().getString("value");
+            if (!value2.equals(actualValue)) {
+                throw new RuntimeException("Should be " + value + " but was " + actualValue);
+            }
+
+            // uncomment 'sleep' to make the problem go away
+//            Thread.sleep(1000);
+
+            ResultSet rs = session.execute("update lwt set value=null where key=? if value=?", key, value2);
             if (rs.wasApplied()) {
-                rs = session.execute("update lwt set value=null where key=? if value=?", key, value2);
-                if (rs.wasApplied()) {
-                    Row row = session.execute("select value from lwt where key=?", key).one();
-                    String actualValue = row.getString("value");
-                    if (actualValue != null) {
-                        throw new RuntimeException("Should be null but was " + actualValue);
-                    }
+                actualValue = session.execute("select value from lwt where key=?", key).one().getString("value");
+                if (actualValue != null) {
+                    throw new RuntimeException("Should be null but was " + actualValue);
                 }
             }
         }
