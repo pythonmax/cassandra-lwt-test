@@ -32,15 +32,16 @@ public class Main {
                 throw new RuntimeException("Should be " + value + " but was " + actualValue);
             }
 
-            // uncomment 'sleep' to make the problem go away
+            // (1) uncomment next line to make the problem go away
 //            Thread.sleep(1000);
 
-            ResultSet rs = session.execute("update lwt set value=null where key=? if value=?", key, value2);
+            ResultSet rs = session.execute("update lwt set value='MUHAHA' where key=? if value=?", key, value2);
             if (rs.wasApplied()) {
                 actualValue = session.execute("select value from lwt where key=?", key).one().getString("value");
-                if (actualValue != null) {
-                    throw new RuntimeException("Should be null but was " + actualValue);
+                if (!"MUHAHA".equals(actualValue)) {
+                    throw new RuntimeException("Should be MUHAHA but was " + actualValue);
                 }
+                System.out.println("SUCCESS: actual value is " + actualValue);
             }
         }
     }
@@ -54,7 +55,8 @@ public class Main {
                         .setReadTimeoutMillis(90000)
                 )
                 .withQueryOptions(new QueryOptions().setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM))
-//                .withTimestampGenerator(new AtomicMonotonicTimestampGenerator())
+                // (2) uncomment next line to make the problem go away
+//                .withTimestampGenerator(ServerSideTimestampGenerator.INSTANCE)
                 .build();
     }
 
