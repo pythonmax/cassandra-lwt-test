@@ -7,18 +7,13 @@ import java.util.UUID;
 
 public class Main {
 
-    private static final String contactPoints = "max-dev";
-
-
     public static void main(String[] args) throws Exception {
-        try (Cluster cluster = connect(contactPoints)) {
+        try (Cluster cluster = connect()) {
             Session session = cluster.connect();
             session.execute("DROP KEYSPACE IF EXISTS lwt_test");
             session.execute("CREATE KEYSPACE lwt_test WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 } AND DURABLE_WRITES = true");
             session.execute("CREATE TABLE lwt_test.lwt (key timeuuid, dummy text, value text, PRIMARY KEY(key))");
-            session.close();
-
-            session = cluster.connect("lwt_test");
+            session.execute("USE lwt_test");
 
             final UUID key = UUIDs.timeBased();
             final String dummy = "ABC";
@@ -46,14 +41,10 @@ public class Main {
         }
     }
 
-    private static Cluster connect(String contactPoints) {
+    private static Cluster connect() {
         return Cluster.builder()
-                .addContactPoints(contactPoints)
+                .addContactPoints("max-dev")
                 .withPort(9042)
-                .withSocketOptions(new SocketOptions()
-                        .setConnectTimeoutMillis(90000)
-                        .setReadTimeoutMillis(90000)
-                )
                 .withQueryOptions(new QueryOptions().setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM))
                 // (2) uncomment next line to make the problem go away
 //                .withTimestampGenerator(ServerSideTimestampGenerator.INSTANCE)
