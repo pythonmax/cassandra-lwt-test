@@ -43,7 +43,7 @@ public class Main {
 
     private static Cluster connect() {
         return Cluster.builder()
-                .addContactPoints("max-dev")
+                .addContactPoints("remote-cluster")
                 .withPort(9042)
                 .withQueryOptions(new QueryOptions().setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM))
                 // (2) uncomment next line to make the problem go away
